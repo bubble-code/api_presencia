@@ -25,7 +25,7 @@ class FichajeUpdate(BaseModel):
             "example": {
                 "IDControlPresencia": 89939411,
                 "IDOperario": "167",
-                "Fecha": "03/12/2025",
+                "Fecha": "16/12/2025",
                 "Hora": "10:00:00",
                 "Entrada": 1,
                 "MotivoAusencia": None,

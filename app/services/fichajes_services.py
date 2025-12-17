@@ -49,6 +49,77 @@ def get_fichajes(idOperario: str | None, fechaDesde: date, fechaHasta: date)->li
         print(f"Error al obtener los fichajes: {e}")
         return {"status": "error", "message": "Internal server error"}    
 
+def get_operarios_activos()->list[dict]:
+    listResultSolmicro = []
+    try: 
+        query = text("""SELECT IDOperario,DescOperario,IDDepartamento,DescDepartamento,Activo FROM vPresenciaOperariosActivos""")       
+
+        with engine.connect() as connection:
+            resultado = connection.execute(query).fetchall()
+            listResultSolmicro = [
+                                  {
+                                    "IDOperario": str(row[0]),
+                                    "DescOperario": str(row[1]),                                    
+                                    "IDDepartamento": str(row[2]),                                    
+                                    "DescDepartamento": str(row[3]),                                    
+                                    "Activo": bool(row[4]),                                    
+                                    } for row in resultado
+                                  ]
+        return listResultSolmicro
+    except Exception as e:
+        print(f"Error al obtener los fichajes: {e}")
+        return {"status": "error", "message": "Internal server error"}  
+    
+def get_calendario_empresa(fechaDesde: date, fechaHasta: date)->list[dict]:
+    if not fechaDesde or not fechaHasta:
+        raise HTTPException(status_code=422, detail="Debe indicar fechaDesde y fechaHasta")
+
+    listResultSolmicro = []
+    try: 
+        query = text("""SELECT Fecha,TipoDia,DescTipoDia,IDTipoTurno,DescTurno,Duracion FROM vPresenciaCalendarioEmpresaDuracion 
+                         WHERE Fecha >= CONVERT(DATETIME, :fechaDesde + ' 00:00:00', 120)
+                         AND Fecha <= CONVERT(DATETIME, :fechaHasta + ' 23:59:00', 120)
+                         ORDER BY Fecha ASC""") 
+        params = {
+            "fechaDesde": fechaDesde.strftime("%Y-%m-%d"),
+            "fechaHasta": fechaHasta.strftime("%Y-%m-%d")
+            } 
+        with engine.connect() as connection:
+            resultado = connection.execute(query,params).fetchall()
+            listResultSolmicro = [
+                                {
+                                "Fecha": str(row[0]),
+                                "TipoDia": str(row[1]),                                    
+                                "DescTipoDia": str(row[2]),                                    
+                                "IDTipoTurno": str(row[3]),                                    
+                                "DescTurno": str(row[4]),                                    
+                                "Duracion": str(row[5])                                    
+                                } for row in resultado
+                                ]
+        return listResultSolmicro
+    except Exception as e:
+        print(f"Error al obtener los fichajes: {e}")
+        return {"status": "error", "message": "Internal server error"}  
+   
+def get_operarios_motivos_ausencias()->list[dict]:
+    listResultSolmicro = []
+    try: 
+        query = text("""SELECT IDMotivo,DescMotivo,Computable FROM vPresenciaMotivosAusencias""")       
+
+        with engine.connect() as connection:
+            resultado = connection.execute(query).fetchall()
+            listResultSolmicro = [
+                                  {
+                                    "IDMotivo": row[0],
+                                    "DescMotivo": row[1],                                    
+                                    "Computable": row[2]                                  
+                                    } for row in resultado
+                                  ]
+        return listResultSolmicro
+    except Exception as e:
+        print(f"Error al obtener los fichajes: {e}")
+        return {"status": "error", "message": "Internal server error"} 
+
 
 def insert_fichaje(data):
     try:
@@ -68,13 +139,17 @@ def insert_fichaje(data):
             "IDOperario": data.IDOperario,
             "Fecha": data.Fecha.strftime("%Y-%d-%m 00:00:00"),
             "Hora": f"{data.Fecha.strftime('%Y-%d-%m')} {data.Hora}",
+            # "Hora": datetime.now(),
             "Entrada": data.Entrada,
             "MotivoAusencia": data.MotivoAusencia,
-            "FechaCreacionAudi": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "FechaModificacionAudi": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            # "FechaCreacionAudi": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "FechaCreacionAudi": datetime.now(),
+            "FechaModificacionAudi": datetime.now(),
+            # "FechaModificacionAudi": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "UsuarioAudi": data.Usuario,
             "UsuarioCreacionAudi": data.Usuario
         }
+        print(f"idControlP :  {params}")
 
         with engine.connect() as connection:
             connection.execute(sql, params)
@@ -83,7 +158,7 @@ def insert_fichaje(data):
         return {"status": "ok", "message": "Fichaje insertado correctamente"}
     except Exception as e:
         print(f"Error al insertar fichaje: {e}")
-        return {"status": "error", "message": "Error al insertar fichaje"}
+        return {"status": "error", "message": f"Error al insertar fichaje {e}"}
 
 def update_fichaje(data:FichajeUpdate):
     try:

@@ -24,7 +24,7 @@ class FichajeInsert(BaseModel):
         "json_schema_extra": {
             "example": {
                 "IDOperario": "167",
-                "Fecha": "03/12/2025",
+                "Fecha": "16/12/2025",
                 "Hora": "10:00:00",
                 "Entrada": 0,
                 "MotivoAusencia": "14",
